@@ -40,6 +40,7 @@ contract Update_verifier {
 
     }
     function verify1(uint[] memory input, Proof1 memory proof) internal view returns (uint) {
+        // get vk
         VerifyingKey1 memory vk = verifyingKey1();
         require(input.length + 1 == vk.IC.length,"verifier-bad-input");
         // Compute the linear combination vk_x
@@ -47,6 +48,7 @@ contract Update_verifier {
         for (uint i = 0; i < input.length; i++)
             vk_x = Pairing.addition(vk_x, Pairing.scalar_mul(vk.IC[i + 1], input[i]));
         vk_x = Pairing.addition(vk_x, vk.IC[0]);
+        // pairing check for four pairs
         if (!Pairing.pairingProd4(
             Pairing.negate(proof.A), proof.B,
             vk.alfa1, vk.beta2,
@@ -55,20 +57,25 @@ contract Update_verifier {
         )) return 1;
         return 0;
     }
+
+    //params:(pi_a,pi_b,pi_c) and public input
     function update_verifyProof(
             uint[2] memory a,
             uint[2][2] memory b,
             uint[2] memory c,
             uint[3] memory input
         ) public view returns (bool r) {
+        // fill Proof1 with (pi_a,pi_b,pi_c) 
         Proof1 memory proof;
         proof.A = Pairing.G1Point(a[0], a[1]);
         proof.B = Pairing.G2Point([b[0][0], b[0][1]], [b[1][0], b[1][1]]);
         proof.C = Pairing.G1Point(c[0], c[1]);
+        // copy input to inputValues
         uint[] memory inputValues = new uint[](input.length);
         for(uint i = 0; i < input.length; i++){
             inputValues[i] = input[i];
         }
+        // verify result
         if (verify1(inputValues, proof) == 0) {
             return true;
         } else {
